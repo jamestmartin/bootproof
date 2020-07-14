@@ -8,6 +8,11 @@ rather than through a traditional operating system.
 I don't seriously expect to ever accomplish that, so for now I'm probably just going to...
 make a forth or something.
 
+## System Requirements
+Other configurations may work, but only these systems are regularly tested.
+* CPU: x86_64 QEMU, OVMF UEFI.
+* Memory: 128 MB. (64 MB appears to be the minimum required to load OVMF at all. Real hardware might require less?)
+
 ## Running
 bootproof runs on x86_64 UEFI. You may either boot the program directly on your own computer or use an emulator.
 
@@ -15,7 +20,7 @@ Make sure you have the `cargo-xbuild` crate installed and nightly Rust so you ca
 
 First, build with:
 ```
-cargo +nightly xbuild --target x86_64-unknown-uefi
+cargo xbuild --release --target x86_64-unknown-uefi
 ```
 
-And to run, simply `./run.sh`.
+And to run, `./run.sh` will launch bootproof in QEMU.

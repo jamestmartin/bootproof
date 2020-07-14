@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins" }
 uefi = "0.4.6"
+x86_64 = "0.11.1"
