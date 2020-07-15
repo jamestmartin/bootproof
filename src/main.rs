@@ -20,7 +20,7 @@ fn setup(st: &SystemTable<Boot>, _handle: Handle) {
     println!("Booting...");
 }
 
-fn main(st: SystemTable<uefi::table::Runtime>, mmap: uefi::table::boot::MemoryMapIter) -> ! {
+fn main(_st: SystemTable<uefi::table::Runtime>, _mmap: uefi::table::boot::MemoryMapIter) -> ! {
     halt();
 }
 
