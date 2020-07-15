@@ -20,7 +20,7 @@ Make sure you have the `cargo-xbuild` crate installed and nightly Rust so you ca
 
 First, build with:
 ```
-cargo xbuild --release --target x86_64-unknown-uefi
+cargo xbuild --target x86_64-unknown-uefi
 ```
 
 And to run, `./run.sh` will launch bootproof in QEMU.
