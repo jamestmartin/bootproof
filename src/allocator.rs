@@ -1,6 +1,6 @@
 use alloc::alloc::GlobalAlloc;
 use core::alloc::Layout;
-use uefi::table::boot::{AllocateType, MemoryDescriptor, MemoryType};
+use uefi::table::boot::{AllocateType, MemoryType};
 
 pub enum Allocator {
     None,
@@ -11,10 +11,9 @@ unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         match self {
             Allocator::Uefi(st) => {
-                crate::log!("Allocate {:?}", layout);
                 st.boot_services().allocate_pages(AllocateType::AnyPages, MemoryType::LOADER_DATA, layout.size())
                     .expect("Failed to allocate memory!")
-                    .expect("Failed to allocate memory! 2")
+                    .unwrap()
                     as *mut u8
             },
             Allocator::None => panic!("No allocator available!")
@@ -24,8 +23,9 @@ unsafe impl GlobalAlloc for Allocator {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         match self {
             Allocator::Uefi(st) => {
-                crate::log!("Free {:?}", layout);
-                st.boot_services().free_pages(ptr as u64, layout.size());
+                st.boot_services().free_pages(ptr as u64, layout.size())
+                    .expect("Failed to free memory!")
+                    .unwrap();
             },
             Allocator::None => {
                 panic!("No allocator available!");

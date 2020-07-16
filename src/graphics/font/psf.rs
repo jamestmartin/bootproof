@@ -51,7 +51,6 @@ impl PSFGlyph<'_> {
 
     pub fn get(&self, x: u32, y: u32) -> bool {
         let line_size = num_integer::div_ceil(self.width, 8);
-        let char_size = line_size * self.height;
         let (line_byte_index, bit_index) = num_integer::div_rem(x, 8);
         let mask = 0b10000000 >> bit_index;
         let byte = self.bitmap[(y * line_size + line_byte_index) as usize];

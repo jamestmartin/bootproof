@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use psf::*;
 
-mod psf;
+pub mod psf;
 
 static mut FONT: Option<Arc<PSF>> = None;
 
@@ -16,20 +16,6 @@ pub fn font() -> Arc<PSF> {
     }
 }
 
-fn pad(slice: &[u8]) -> [u8; 4] {
-    if slice.len() == 1 {
-        [slice[0], 0, 0, 0]
-    } else if slice.len() == 2 {
-        [slice[0], slice[1], 0, 0]
-    } else if slice.len() == 3 {
-        [slice[0], slice[1], slice[2], 0]
-    } else if slice.len() == 4 {
-        [slice[0], slice[1], slice[2], slice[3]]
-    } else {
-        crate::panic!("Bad character length {}", slice.len())
-    }
-}
-
 fn parse_font() -> PSF {
     use core::convert::TryInto;
     let font = core::include_bytes!("font/cozette.psf");
@@ -37,14 +23,13 @@ fn parse_font() -> PSF {
     let charsize = u32::from_le_bytes(font[20..24].try_into().unwrap());
     let height = u32::from_le_bytes(font[24..28].try_into().unwrap());
     let width = u32::from_le_bytes(font[28..32].try_into().unwrap());
-    crate::log!("{} {} {}", width, height, charsize);
 
     let glyphs_size = (length * charsize) as usize;
     let mut glyphs = Vec::with_capacity(glyphs_size);
     glyphs.extend_from_slice(&font[32..glyphs_size + 32]);
 
     let mut unicode_map = Vec::new();
-    let mut unicode_info = &font[glyphs_size + 32..];
+    let unicode_info = &font[glyphs_size + 32..];
     let mut glyph = 0;
     let mut i = 0;
     while i < unicode_info.len() {

@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 #![feature(abi_efiapi)]
-#![feature(alloc)]
 #![feature(alloc_error_handler)]
 #![feature(asm)]
 extern crate alloc;
