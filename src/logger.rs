@@ -1,5 +1,3 @@
-use crate::misc::halt;
-
 use core::fmt::Write;
 
 pub enum LoggerBackend {
@@ -45,7 +43,7 @@ impl Write for Logger<'_> {
                 };
                 output.write_str(s)
             },
-            _ => {
+            LoggerBackend::None => {
                 // There's pretty much no way to recover from a missing logger.
                 // What are we supposed to do-- log the error?
                 Ok(())
@@ -61,7 +59,7 @@ macro_rules! log {
     ($( $arg:expr ),* ) => {
         unsafe {
             use core::fmt::Write;
-            core::writeln!(LOGGER_BACKEND.stderr(), $( $arg ),*).unwrap();
+            core::writeln!(crate::logger::LOGGER_BACKEND.stderr(), $( $arg ),*).unwrap();
         }
     }
 }
@@ -71,7 +69,7 @@ macro_rules! print {
     ($( $arg:expr ),* ) => {
         unsafe {
             use core::fmt::Write;
-            core::write!(LOGGER_BACKEND.stdout(), $( $arg ),*).unwrap();
+            core::write!(crate::logger::LOGGER_BACKEND.stdout(), $( $arg ),*).unwrap();
         }
     }
 }
@@ -81,7 +79,7 @@ macro_rules! println {
     ($( $arg:expr ),* ) => {
         unsafe {
             use core::fmt::Write;
-            core::writeln!(LOGGER_BACKEND.stdout(), $( $arg ),*).unwrap();
+            core::writeln!(crate::logger::LOGGER_BACKEND.stdout(), $( $arg ),*).unwrap();
         }
     }
 }
@@ -89,13 +87,15 @@ macro_rules! println {
 #[macro_export]
 macro_rules! panic {
     ($( $arg:expr ),* ) => {
-        log!($( $arg ),*);
-        halt();
+        {
+            use crate::misc::halt;
+            crate::log!($( $arg ),*);
+            halt()
+        }
     }
 }
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    log!("{}", info);
-    halt();
+    panic!("{}", info);
 }

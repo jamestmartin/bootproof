@@ -1,0 +1,1 @@
+Cozette is an MIT-licensed font by Slavfox. Its source is available here: https://github.com/slavfox/Cozette

@@ -1,11 +1,17 @@
 #![no_std]
 #![no_main]
 #![feature(abi_efiapi)]
+#![feature(alloc)]
+#![feature(alloc_error_handler)]
 #![feature(asm)]
+extern crate alloc;
 
+mod allocator;
+mod graphics;
 mod logger;
 mod misc;
 
+use crate::allocator::{Allocator, ALLOCATOR};
 use crate::logger::{LoggerBackend, LOGGER_BACKEND};
 use crate::misc::halt;
 
@@ -18,10 +24,26 @@ fn setup(st: &SystemTable<Boot>, _handle: Handle) {
     st.stdout().reset(false).expect_success("Failed to reset UEFI stdout.");
 
     println!("Booting...");
+
+    for entry in st.config_table() {
+        use uefi::table::cfg::*;
+        if entry.guid == ACPI2_GUID {
+            print!("ACPI2");
+        } else if entry.guid == SMBIOS_GUID {
+            print!("SMBIOS");
+        } else if entry.guid == SMBIOS3_GUID {
+            print!("SMBIOS3");
+        } else {
+            print!("{}", entry.guid);
+        }
+        println!(": 0x{:016X}", entry.address as u64);
+    }
+
+    graphics::do_graphics(st);
 }
 
 fn main(_st: SystemTable<uefi::table::Runtime>, _mmap: uefi::table::boot::MemoryMapIter) -> ! {
-    halt();
+    halt()
 }
 
 #[entry]
@@ -30,6 +52,7 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
 
     unsafe {
         LOGGER_BACKEND = LoggerBackend::UefiStdio(st_boot.unsafe_clone());
+        ALLOCATOR = Allocator::Uefi(st_boot.unsafe_clone());
     }
 
     setup(&st_boot, handle);
@@ -55,6 +78,7 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
     // I do not currently have an adequate stdout for post-UEFI, but the UEFI one is now invalid.
     unsafe {
         LOGGER_BACKEND = LoggerBackend::None;
+        ALLOCATOR = Allocator::None;
     }
 
     main(st_runtime, mmap);
