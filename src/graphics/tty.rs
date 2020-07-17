@@ -2,7 +2,6 @@ pub mod serial;
 pub mod terminal;
 pub mod uefi;
 
-use alloc::boxed::Box;
 use crate::graphics::tty::serial::SerialTty;
 
 pub trait Tty {

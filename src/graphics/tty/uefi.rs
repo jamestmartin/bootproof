@@ -30,7 +30,7 @@ impl Tty for UefiTty<'_> {
 
     fn clear(&mut self) {
         // VT100 escape code to reset the terminal: `ESC C`.
-        self.output.clear();
+        self.output.clear().unwrap().unwrap();
     }
 
     fn flush(&mut self) {

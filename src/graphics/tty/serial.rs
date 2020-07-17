@@ -1,17 +1,14 @@
-use alloc::string::String;
 use crate::graphics::tty::Tty;
 
 #[derive(Clone)]
 pub struct SerialTty {
     port: u16,
-    buffer: String,
 }
 
 impl SerialTty {
     pub unsafe fn new(port: u16) -> SerialTty {
         SerialTty {
             port: port,
-            buffer: String::new(),
         }
     }
 
@@ -20,15 +17,25 @@ impl SerialTty {
             asm!("out dx, al", in("dx") self.port, in("al") cmd);
         }
     }
+
+    fn outc(&self, c: char) {
+        let len = c.len_utf8();
+        let bytes = (c as u32).to_le_bytes();
+        for i in 0..len {
+            self.outb(bytes[i]);
+        }
+    }
 }
 
 impl Tty for SerialTty {
     fn putc(&mut self, c: char) {
-        self.buffer.push(c);
+        self.outc(c);
     }
 
     fn puts(&mut self, s: &str) {
-        self.buffer.push_str(s);
+        for c in s.chars() {
+            self.putc(c);
+        }
     }
 
     fn clear(&mut self) {
@@ -37,9 +44,6 @@ impl Tty for SerialTty {
     }
 
     fn flush(&mut self) {
-        for b in self.buffer.bytes() {
-            self.outb(b);
-        }
-        self.buffer.clear();
+        // This TTY doesn't support buffering.
     }
 }

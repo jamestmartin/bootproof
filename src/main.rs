@@ -3,14 +3,16 @@
 #![feature(abi_efiapi)]
 #![feature(alloc_error_handler)]
 #![feature(asm)]
+#![feature(naked_functions)]
+#![feature(abi_x86_interrupt)]
 extern crate alloc;
 
 mod allocator;
 #[macro_use]
 mod graphics;
 mod misc;
+mod arch;
 
-use alloc::boxed::Box;
 use core::mem;
 use core::slice;
 use crate::allocator::{Allocator, ALLOCATOR};
@@ -24,7 +26,6 @@ fn setup(st: &SystemTable<Boot>, _handle: Handle) {
     st.stdout().reset(false).expect_success("Failed to reset UEFI stdout.");
 
     println!("Booting...");
-    use core::fmt::Write;
 
     for entry in st.config_table() {
         use uefi::table::cfg::*;
@@ -44,6 +45,8 @@ fn setup(st: &SystemTable<Boot>, _handle: Handle) {
 }
 
 fn main(_st: SystemTable<uefi::table::Runtime>, _mmap: uefi::table::boot::MemoryMapIter) -> ! {
+    crate::arch::x86_64::breakpoint();
+
     halt()
 }
 
@@ -52,9 +55,9 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
     // Tasks that require the UEFI boot services.
 
     unsafe {
+        ALLOCATOR = Allocator::Uefi(st_boot.unsafe_clone());
         STDOUT = Some(SerialTty::new(0x3F8));
         STDERR = Some(SerialTty::new(0x3F8));
-        ALLOCATOR = Allocator::Uefi(st_boot.unsafe_clone());
     }
 
     setup(&st_boot, handle);
@@ -74,6 +77,15 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
         let mmap_buf_slice = unsafe { slice::from_raw_parts_mut(mmap_buf as *mut u8, mmap_buf_size) };
         st_boot.exit_boot_services(handle, mmap_buf_slice).expect_success("Failed to exit the UEFI boot services.")
     };
+
+    // Replace the GDT and IDT with my own so I can start handling interrupts.
+    use x86_64::instructions::interrupts;
+    use crate::arch::x86_64::{gdt, idt};
+
+    interrupts::disable();
+    gdt::load();
+    idt::load();
+    interrupts::enable();
 
     // Tasks that do not require the UEFI boot services.
 
