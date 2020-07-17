@@ -6,16 +6,17 @@
 extern crate alloc;
 
 mod allocator;
+#[macro_use]
 mod graphics;
-mod logger;
 mod misc;
 
-use crate::allocator::{Allocator, ALLOCATOR};
-use crate::logger::{LoggerBackend, LOGGER_BACKEND};
-use crate::misc::halt;
-
+use alloc::boxed::Box;
 use core::mem;
 use core::slice;
+use crate::allocator::{Allocator, ALLOCATOR};
+use crate::graphics::tty::{Tty, STDOUT, STDERR};
+use crate::graphics::tty::serial::SerialTty;
+use crate::misc::halt;
 use uefi::prelude::*;
 use uefi::table::boot::{AllocateType, MemoryDescriptor, MemoryType};
 
@@ -23,6 +24,7 @@ fn setup(st: &SystemTable<Boot>, _handle: Handle) {
     st.stdout().reset(false).expect_success("Failed to reset UEFI stdout.");
 
     println!("Booting...");
+    use core::fmt::Write;
 
     for entry in st.config_table() {
         use uefi::table::cfg::*;
@@ -50,7 +52,8 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
     // Tasks that require the UEFI boot services.
 
     unsafe {
-        LOGGER_BACKEND = LoggerBackend::UefiStdio(st_boot.unsafe_clone());
+        STDOUT = Some(SerialTty::new(0x3F8));
+        STDERR = Some(SerialTty::new(0x3F8));
         ALLOCATOR = Allocator::Uefi(st_boot.unsafe_clone());
     }
 
@@ -74,11 +77,10 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
 
     // Tasks that do not require the UEFI boot services.
 
-    // I do not currently have an adequate stdout for post-UEFI, but the UEFI one is now invalid.
     unsafe {
-        LOGGER_BACKEND = LoggerBackend::None;
+        // TODO: An allocator that works out of UEFI mode.
         ALLOCATOR = Allocator::None;
     }
 
-    main(st_runtime, mmap);
+    main(st_runtime, mmap)
 }

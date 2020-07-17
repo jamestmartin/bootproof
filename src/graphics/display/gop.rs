@@ -1,5 +1,7 @@
+use crate::println;
 use crate::graphics::color::{Color, RGB};
 use crate::graphics::display::Display;
+use crate::graphics::tty::Tty;
 use uefi::proto::console::gop::{FrameBuffer, GraphicsOutput, ModeInfo, PixelFormat};
 
 const PIXEL_WIDTH_BYTES: usize = 4;
@@ -24,7 +26,7 @@ impl GopDisplay<'_> {
         }
         let mode = mode.expect("No usable pixel formats found.");
         let (width, height) = mode.info().resolution();
-        crate::log!("Using mode: {}x{} {:?}", width, height, mode.info().pixel_format());
+        println!("Using mode: {}x{} {:?}", width, height, mode.info().pixel_format());
         gop.set_mode(&mode).expect("Failed to set UEFI Graphics Output mode.").unwrap();
 
         let info = gop.current_mode_info();
