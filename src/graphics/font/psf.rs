@@ -21,6 +21,18 @@ pub struct PSFGlyph<'a> {
 }
 
 impl PSF {
+    pub fn resolution(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
     fn index_of(&self, c: char) -> Option<usize> {
         for entry in &self.unicode {
             if entry.c == c {

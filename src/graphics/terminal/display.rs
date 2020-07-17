@@ -1,76 +1,54 @@
 use alloc::sync::Arc;
-use alloc::vec::Vec;
-use crate::graphics::color::{Color, RGB};
+use crate::graphics::color::RGB;
 use crate::graphics::display::Display;
-use crate::graphics::display::gop::GopDisplay;
 use crate::graphics::font::psf::PSF;
 use crate::graphics::terminal::Terminal;
+use crate::graphics::terminal::frame::TerminalFrame;
 
-pub struct DisplayTerminal<'a> {
-    dp: GopDisplay<'a>,
+pub struct DisplayTerminal<'display> {
+    display: &'display mut dyn Display,
+    frame: TerminalFrame,
     font: Arc<PSF>,
-    buf: Vec<char>,
     bg: RGB,
     fg: RGB,
 }
 
 impl DisplayTerminal<'_> {
-    pub fn create<'a>(dp: GopDisplay<'a>, font: Arc<PSF>, bg: impl Color, fg: impl Color) -> DisplayTerminal<'a> {
-        let (dp_width, dp_height) = dp.resolution();
-        let (font_width, font_height) = (font.width, font.height);
+    pub fn new<'display>(display: &'display mut dyn Display, font: Arc<PSF>, bg: RGB, fg: RGB) -> DisplayTerminal<'display> {
+        let (dp_width, dp_height) = display.resolution();
+        let (ft_width, ft_height) = font.resolution();
+        let ch_width = dp_width / ft_width as usize;
+        let ch_height = dp_height / ft_height as usize;
+
         DisplayTerminal {
-            dp: dp,
+            display: display,
+            frame: TerminalFrame::new((ch_width, ch_height)),
             font: font,
-            buf: {
-                let char_count = (dp_width / font_width as usize) * (dp_height / font_height as usize);
-                let mut buf = Vec::with_capacity(char_count);
-                for _ in 0..char_count {
-                    buf.push(' ');
-                }
-                buf
-            },
-            bg: bg.into_rgb(),
-            fg: fg.into_rgb(),
+            bg: bg,
+            fg: fg,
         }
-    }
-
-    fn get_index(&self, x: usize, y: usize) -> usize {
-        self.width() * y + x
-    }
-
-    fn get_char(&self, x: usize, y: usize) -> char {
-        let i = self.get_index(x, y);
-        self.buf[i]
     }
 }
 
 impl Terminal for DisplayTerminal<'_> {
-    fn resolution(&self) -> (usize, usize) {
-        let width = self.dp.width() / self.font.width as usize;
-        let height = self.dp.height() / self.font.height as usize;
-        (width, height)
+    fn get_frame<'a>(&'a self) -> &'a TerminalFrame {
+        &self.frame
     }
 
-    fn set_char(&mut self, x: usize, y: usize, c: char) {
-        let i = self.get_index(x, y);
-        self.buf.as_mut_slice()[i] = c;
-    }
-
-    fn clear(&mut self) {
-        for x in 0..self.width() {
-            for y in 0..self.height() {
-                self.set_char(x, y, ' ');
-            }
-        }
+    fn borrow_frame<'a>(&'a mut self) -> &'a mut TerminalFrame {
+        &mut self.frame
     }
 
     fn refresh(&mut self) {
-        self.dp.clear(self.bg);
-        for x in 0..self.width() {
-            for y in 0..self.height() {
-                let glyph = self.font.lookup(self.get_char(x, y)).expect("Character missing from font.");
+        self.display.clear(self.bg);
+        for x in 0..self.frame.width() {
+            for y in 0..self.frame.height() {
+                let c = self.frame.get(x, y);
+                if c == '\u{0}' { continue; }
+
+                let glyph = self.font.lookup(c).expect("Character missing from font.");
                 unsafe {
-                    self.dp.draw_glyph(self.fg, self.font.width as usize * x, self.font.height as usize * y, glyph);
+                    self.display.draw_glyph(self.fg, self.font.width() as usize * x, self.font.height() as usize * y, glyph);
                 }
             }
         }

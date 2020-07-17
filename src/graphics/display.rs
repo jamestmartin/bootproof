@@ -1,4 +1,4 @@
-use crate::graphics::color::Color;
+use crate::graphics::color::RGB;
 use crate::graphics::font::psf::PSFGlyph;
 
 pub mod gop;
@@ -8,8 +8,8 @@ pub trait Display {
     fn width(&self) -> usize { self.resolution().0 }
     fn height(&self) -> usize { self.resolution().1 }
 
-    unsafe fn set_pixel(&mut self, color: impl Color, x: usize, y: usize);
-    fn set_pixel_ignore_oob(&mut self, color: impl Color, x: usize, y: usize) {
+    unsafe fn set_pixel(&mut self, color: RGB, x: usize, y: usize);
+    fn set_pixel_ignore_oob(&mut self, color: RGB, x: usize, y: usize) {
         if x > self.width() || y > self.height() {
             return;
         }
@@ -19,9 +19,9 @@ pub trait Display {
         }
     }
 
-    fn clear(&mut self, color: impl Color);
+    fn clear(&mut self, color: RGB);
 
-    unsafe fn draw_glyph(&mut self, color: impl Color, x: usize, y: usize, glyph: PSFGlyph) {
+    unsafe fn draw_glyph(&mut self, color: RGB, x: usize, y: usize, glyph: PSFGlyph) {
         // Glyphs may actually be larger than their nominal bounding box.
         // In fact, the Cozette font is like this: the heart symbol is 7 pixels wide,
         // despite nominally being a 6x13 font.

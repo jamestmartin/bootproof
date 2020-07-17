@@ -12,9 +12,9 @@ use crate::graphics::tty::Tty;
 use crate::graphics::tty::terminal::TerminalTty;
 
 pub fn do_graphics(st: &uefi::prelude::SystemTable<uefi::prelude::Boot>) {
-    let display = GopDisplay::init(st.boot_services());
-    let terminal = DisplayTerminal::create(display, font(), COLOR_BLACK, COLOR_WHITE);
-    let mut tty = TerminalTty::create(terminal);
+    let mut display = GopDisplay::init(st.boot_services());
+    let mut terminal = DisplayTerminal::new(&mut display, font(), COLOR_BLACK, COLOR_WHITE);
+    let mut tty = TerminalTty::new(&mut terminal);
 
     for _ in 0..30 {
         for c in 'a'..'z' {

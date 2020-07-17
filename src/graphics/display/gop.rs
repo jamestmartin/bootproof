@@ -1,4 +1,4 @@
-use crate::graphics::color::Color;
+use crate::graphics::color::{Color, RGB};
 use crate::graphics::display::Display;
 use uefi::proto::console::gop::{FrameBuffer, GraphicsOutput, ModeInfo, PixelFormat};
 
@@ -47,11 +47,11 @@ impl GopDisplay<'_> {
 impl Display for GopDisplay<'_> {
     fn resolution(&self) -> (usize, usize) { self.mode.resolution() }
 
-    unsafe fn set_pixel(&mut self, color: impl Color, x: usize, y: usize) {
+    unsafe fn set_pixel(&mut self, color: RGB, x: usize, y: usize) {
         self.fb.write_value(self.pixel_index(x, y), self.make_pixel(color));
     }
 
-    fn clear(&mut self, color: impl Color) {
+    fn clear(&mut self, color: RGB) {
         let (width, height) = self.resolution();
         let px = self.make_pixel(color);
         for x in 0..width {
