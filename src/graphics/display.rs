@@ -1,5 +1,5 @@
 use crate::graphics::color::RGB;
-use crate::graphics::font::psf::PSFGlyph;
+use crate::graphics::font::Glyph;
 
 pub mod gop;
 
@@ -8,6 +8,7 @@ pub trait Display {
     fn width(&self) -> usize { self.resolution().0 }
     fn height(&self) -> usize { self.resolution().1 }
 
+    // HACK: This interface sucks.
     unsafe fn set_pixel(&mut self, color: RGB, x: usize, y: usize);
     fn set_pixel_ignore_oob(&mut self, color: RGB, x: usize, y: usize) {
         if x > self.width() || y > self.height() {
@@ -21,34 +22,30 @@ pub trait Display {
 
     fn clear(&mut self, color: RGB);
 
-    unsafe fn draw_glyph(&mut self, color: RGB, x: usize, y: usize, glyph: PSFGlyph) {
-        // Glyphs may actually be larger than their nominal bounding box.
-        // In fact, the Cozette font is like this: the heart symbol is 7 pixels wide,
-        // despite nominally being a 6x13 font.
-        // However, despite not being an intended use of the format, that extra pixel
-        // can still be stored in the padding bits of the glyph (and is!).
-        // Therefore, we just continue writing those extra bits if they are present.
-        // Note that there is no similar trick for the height,
-        // because the height doesn't have padding.
-        for glyph_x in 0..glyph.width() {
-            for glyph_y in 0..glyph.height() {
+    unsafe fn draw_glyph(&mut self, bounding_box: (usize, usize), x: usize, y: usize, color: RGB, glyph: &dyn Glyph) {
+        // We only assume that space was left for pixels within the bounding box,
+        // and that pixels outside the bounding box may be out-of-bounds.
+        // We use `set_pixel` for the in-bounds pixels and `set_pixel_ignore_oob`
+        // for the out-of-bounds pixels.
+
+        // HACK: I should be able to figure out whether a row or column will be out-of-bounds statically, and:
+        //   1. If it is going to be out-of-bounds and is inside the bounding box, panic, and
+        //   2. if it is outside of the bounding box, don't bother trying to draw that row.
+
+        for glyph_x in 0..glyph.width().min(bounding_box.0) {
+            for glyph_y in 0..glyph.height().min(bounding_box.1) {
                 if glyph.get(glyph_x, glyph_y) {
-                    self.set_pixel(color, x + glyph_x as usize, y + glyph_y as usize);
+                    self.set_pixel(color, x + glyph_x, y + glyph_y);
                 }
             }
         }
 
-        // Sometimes, a font may actually have pixels outside its bounding box!
-        // For example, in Cozette, a 6x13 font, ♡ is actually 7 pixels wide.
-        // This data is still stored in the padding bits of the glyph.
-        // Note that there is no similar trick for height because height doesn't have padding.
-        // Futhermore, this only works on fonts whose width is not a multiple of eight.
-        for glyph_x in glyph.width()..num_integer::div_ceil(glyph.width(), 8) * 8 {
-            for glyph_y in 0..glyph.height() {
+        for glyph_x in glyph.width().min(bounding_box.0)..glyph.width() {
+            for glyph_y in 0..glyph.height().min(bounding_box.1) {
                 if glyph.get(glyph_x, glyph_y) {
                     // These pixels *nominally* aren't supposed to be there,
                     // so we only force the pixels inside the bounding box.
-                    self.set_pixel_ignore_oob(color, x + glyph_x as usize, y + glyph_y as usize);
+                    self.set_pixel_ignore_oob(color, x + glyph_x, y + glyph_y);
                 }
             }
         }

@@ -1,64 +1,31 @@
-use alloc::sync::Arc;
-use alloc::vec::Vec;
-use psf::*;
-
 pub mod psf;
 
-static mut FONT: Option<Arc<PSF>> = None;
+// Note that currently the Font and Glyph traits are fairly specialized to PSF.
+// They will certainly have to be modified to support other types of fonts,
+// but they *work* for now, and that's what's important/
 
-pub fn font() -> Arc<PSF> {
-    unsafe {
-        FONT.clone().unwrap_or_else(|| {
-            let font = Arc::new(parse_font());
-            FONT = Some(font.clone());
-            font
-        })
-    }
+pub trait Font {
+    // Once Rust supports existential types, this needs to be an existential type.
+    type Glyph: Glyph;
+
+    /// The size, in pixels, of the bounding box of each glyph in this font.
+    fn bounding_box(&self) -> (usize, usize);
+
+    fn lookup<'a>(&'a self, ch: char) -> Option<&'a Self::Glyph>;
 }
 
-fn parse_font() -> PSF {
-    use core::convert::TryInto;
-    let font = core::include_bytes!("font/cozette.psf");
-    let length = u32::from_le_bytes(font[16..20].try_into().unwrap());
-    let charsize = u32::from_le_bytes(font[20..24].try_into().unwrap());
-    let height = u32::from_le_bytes(font[24..28].try_into().unwrap());
-    let width = u32::from_le_bytes(font[28..32].try_into().unwrap());
+pub trait Glyph {
+    /// The width, in pixels, of this specific glyph.
+    /// This may be a different size than the font's bounding box.
+    fn width(&self) -> usize;
 
-    let glyphs_size = (length * charsize) as usize;
-    let mut glyphs = Vec::with_capacity(glyphs_size);
-    glyphs.extend_from_slice(&font[32..glyphs_size + 32]);
+    /// The height, in pixels, of this specific glyph.
+    /// This may be a different size than the font's bounding box.
+    fn height(&self) -> usize;
 
-    let mut unicode_map = Vec::new();
-    let unicode_info = &font[glyphs_size + 32..];
-    let mut glyph = 0;
-    let mut i = 0;
-    while i < unicode_info.len() {
-        let mut nc = unicode_info[i];
+    // TODO: Support glyph offsets relative to the font bounding box.
 
-        while nc != 0xFE && nc != 0xFF {
-            let ch_bytes = nc.leading_ones().max(1) as usize;
-            let st = core::str::from_utf8(&unicode_info[i..i + ch_bytes as usize]).expect("Invalid character");
-            let ch = st.chars().next().unwrap();
-            unicode_map.push(UnicodeMap { c: ch, i: glyph });
-            i += ch_bytes;
-            nc = unicode_info[i];
-        }
-
-        // Ignore multi-codepoint spellings of characters (for now).
-        while nc != 0xFF {
-            i += 1;
-            nc = unicode_info[i];
-        }
-
-        i += 1;
-        glyph += 1;
-    }
-    PSF {
-        width: width,
-        height: height,
-        length: length,
-        charsize: charsize,
-        glyphs: glyphs,
-        unicode: unicode_map,
-    }
+    /// Check whether an individual pixel of this glyph is set.
+    /// This function will panic if `x` and `y` are outside the width and height of this glyph.
+    fn get(&self, x: usize, y: usize) -> bool;
 }

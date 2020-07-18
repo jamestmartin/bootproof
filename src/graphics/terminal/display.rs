@@ -1,36 +1,38 @@
-use alloc::sync::Arc;
-use crate::graphics::color::RGB;
+use crate::graphics::color::{Color, RGB};
 use crate::graphics::display::Display;
-use crate::graphics::font::psf::PSF;
+use crate::graphics::font::{Font, Glyph};
 use crate::graphics::terminal::Terminal;
 use crate::graphics::terminal::frame::TerminalFrame;
 
-pub struct DisplayTerminal<'display> {
-    display: &'display mut dyn Display,
+pub struct DisplayTerminal<'d, 'f, G: Glyph> {
+    display: &'d mut (dyn Display + 'd),
+    font: &'f (dyn Font<Glyph = G> + 'f),
     frame: TerminalFrame,
-    font: Arc<PSF>,
     bg: RGB,
     fg: RGB,
 }
 
-impl DisplayTerminal<'_> {
-    pub fn new<'display>(display: &'display mut dyn Display, font: Arc<PSF>, bg: RGB, fg: RGB) -> DisplayTerminal<'display> {
+impl<G: Glyph> DisplayTerminal<'_, '_, G> {
+    pub fn new<'d, 'f>
+            (display: &'d mut (dyn Display + 'd), font: &'f (dyn Font<Glyph = G> + 'f),
+             bg: impl Color, fg: impl Color)
+            -> DisplayTerminal<'d, 'f, G> {
         let (dp_width, dp_height) = display.resolution();
-        let (ft_width, ft_height) = font.resolution();
+        let (ft_width, ft_height) = font.bounding_box();
         let ch_width = dp_width / ft_width as usize;
         let ch_height = dp_height / ft_height as usize;
 
         DisplayTerminal {
             display: display,
-            frame: TerminalFrame::new((ch_width, ch_height)),
             font: font,
-            bg: bg,
-            fg: fg,
+            frame: TerminalFrame::new((ch_width, ch_height)),
+            bg: bg.into_rgb(),
+            fg: fg.into_rgb(),
         }
     }
 }
 
-impl Terminal for DisplayTerminal<'_> {
+impl<G: Glyph> Terminal for DisplayTerminal<'_, '_, G> {
     fn get_frame<'a>(&'a self) -> &'a TerminalFrame {
         &self.frame
     }
@@ -46,9 +48,13 @@ impl Terminal for DisplayTerminal<'_> {
                 let c = self.frame.get(x, y);
                 if c == '\u{0}' { continue; }
 
+                // FIXME: This code shouldn't throw errors.
+                //   instead, it should display some kind of missing character.
                 let glyph = self.font.lookup(c).expect("Character missing from font.");
+                let px_x = x * self.font.bounding_box().0;
+                let px_y = y * self.font.bounding_box().1;
                 unsafe {
-                    self.display.draw_glyph(self.fg, self.font.width() as usize * x, self.font.height() as usize * y, glyph);
+                    self.display.draw_glyph(self.font.bounding_box(), px_x, px_y, self.fg, glyph);
                 }
             }
         }
