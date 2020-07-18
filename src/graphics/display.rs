@@ -1,8 +1,6 @@
 use crate::graphics::color::RGB;
 use crate::graphics::font::Glyph;
 
-pub mod gop;
-
 pub trait Display {
     fn resolution(&self) -> (usize, usize);
     fn width(&self) -> usize { self.resolution().0 }

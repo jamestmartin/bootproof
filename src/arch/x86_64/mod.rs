@@ -16,3 +16,9 @@ pub fn breakpoint() {
         asm!("int3");
     }
 }
+
+pub fn halt() -> ! {
+    use x86_64::instructions::{interrupts, hlt};
+    interrupts::disable();
+    loop { hlt(); }
+}
