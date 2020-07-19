@@ -3,7 +3,9 @@ name = "bootproof"
 version = "0.1.0"
 authors = ["James Martin <james@jtmar.me>"]
 edition = "2018"
+repository = "https://github.com/jamestmartin/bootproof"
 license = "GPL-3.0+"
+publish = false
 
 [dependencies]
 compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins" }

@@ -19,27 +19,27 @@ pub static mut STDERR: Option<SerialTty> = None;
 macro_rules! print {
     // These additional single-argument cases are necessary because `format!` requires allocation,
     // which I don't necessarily *have* (not to mention it's inefficient).
-    ($s:expr) => {
+    ($s:expr) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDOUT.clone().unwrap();
         }
         tty.puts($s);
         tty.flush();
-    };
-    ($($arg:expr),*) => {
+    }};
+    ($($arg:expr),*) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDOUT.clone().unwrap();
         }
         tty.puts(&alloc::format!($($arg),*));
         tty.flush();
-    }
+    }}
 }
 
 #[macro_export]
 macro_rules! println {
-    ($s:expr) => {
+    ($s:expr) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDOUT.clone().unwrap();
@@ -47,8 +47,8 @@ macro_rules! println {
         tty.puts($s);
         tty.putc('\n');
         tty.flush();
-    };
-    ($($arg:expr),*) => {
+    }};
+    ($($arg:expr),*) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDOUT.clone().unwrap();
@@ -56,32 +56,32 @@ macro_rules! println {
         tty.puts(&alloc::format!($($arg),*));
         tty.putc('\n');
         tty.flush();
-    }
+    }}
 }
 
 #[macro_export]
 macro_rules! eprint {
-    ($s:expr) => {
+    ($s:expr) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDERR.clone().unwrap();
         }
         tty.puts($s);
         tty.flush();
-    };
-    ($($arg:expr),*) => {
+    }};
+    ($($arg:expr),*) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDERR.clone().unwrap();
         }
         tty.puts(&alloc::format!($($arg),*));
         tty.flush();
-    }
+    }}
 }
 
 #[macro_export]
 macro_rules! eprintln {
-    ($s:expr) => {
+    ($s:expr) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDERR.clone().unwrap();
@@ -89,8 +89,8 @@ macro_rules! eprintln {
         tty.puts($s);
         tty.putc('\n');
         tty.flush();
-    };
-    ($($arg:expr),*) => {
+    }};
+    ($($arg:expr),*) => {{
         let mut tty;
         unsafe {
             tty = crate::graphics::tty::STDERR.clone().unwrap();
@@ -98,15 +98,15 @@ macro_rules! eprintln {
         tty.puts(&alloc::format!($($arg),*));
         tty.putc('\n');
         tty.flush();
-    }
+    }}
 }
 
 #[macro_export]
 macro_rules! panic {
-    ($($arg:expr),*) => {
+    ($($arg:expr),*) => {{
         crate::eprintln!($($arg),*);
-        crate::arch::x86_64::halt();
-    }
+        crate::arch::x86_64::halt()
+    }}
 }
 
 #[panic_handler]
