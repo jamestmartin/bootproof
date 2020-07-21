@@ -1,5 +1,3 @@
-use crate::graphics::tty::Tty;
-use crate::println;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
@@ -12,5 +10,5 @@ pub fn load() {
 }
 
 extern "x86-interrupt" fn breakpoint_handler(_: &mut InterruptStackFrame) {
-    println!("Breakpoint reached!");
+    log::info!("Breakpoint reached!");
 }

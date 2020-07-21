@@ -125,7 +125,6 @@ impl Glyph for PSFGlyph {
 
     fn get(&self, x: usize, y: usize) -> bool {
         if x > self.width || y > self.height {
-            use crate::graphics::tty::Tty;
             crate::panic!("Glyph pixel index out of bounds.");
         }
 

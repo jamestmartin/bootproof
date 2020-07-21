@@ -9,11 +9,11 @@ extern crate alloc;
 
 mod allocator;
 mod arch;
-#[macro_use]
 mod graphics;
 
+mod logger;
+
 use alloc::vec::Vec;
-use crate::graphics::tty::{Tty, STDOUT, STDERR};
 use crate::graphics::tty::serial::SerialTty;
 use uefi::prelude::*;
 
@@ -36,20 +36,8 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
         // which is undefined behavior.
         ALLOCATOR = GlobalAllocator::Uefi(UefiAllocator::new(st_boot.unsafe_clone()));
 
-        // Although serial ports don't physically exist on modern devices,
-        // they're still supposed by emulators (for QEMU you can set `-serial stdio`),
-        // and they're extremely useful for debugging
-        // because they don't require any setup and are trivial to use.
-        STDOUT = Some({
-            let mut stdout = SerialTty::new(0x3F8);
-            stdout.clear();
-            stdout
-        });
-        STDERR = Some({
-            let mut stderr = SerialTty::new(0x3F8);
-            stderr.clear();
-            stderr
-        });
+        logger::set_tty(SerialTty::new(0x3F8));
+        logger::init().unwrap();
     }
 
     // Our first task is to exit the UEFI boot services.
@@ -118,4 +106,18 @@ fn main(_st: SystemTable<uefi::table::Runtime>) -> ! {
     // Instead, we'll just spin forever until the computer is turned off.
     // We do *not* disable interrupts to allow for testing the interrupt handlers.
     loop { x86_64::instructions::hlt(); }
+}
+
+#[macro_export]
+macro_rules! panic {
+    ($($arg:expr),*) => {{
+        log::error!($($arg),*);
+        // FIXME: Panic shouldn't depend on an architecture-specific function.
+        crate::arch::x86_64::halt()
+    }}
+}
+
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    panic!("{}", info);
 }
