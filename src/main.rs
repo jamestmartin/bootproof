@@ -7,19 +7,18 @@
 #![feature(generic_associated_types)]
 extern crate alloc;
 
-mod allocator;
 mod arch;
+mod driver;
 mod graphics;
-
+mod memory;
 mod logger;
 
 use alloc::vec::Vec;
-use crate::graphics::tty::serial::SerialTty;
 use uefi::prelude::*;
 
 #[entry]
 fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
-    use crate::allocator::{ALLOCATOR, GlobalAllocator};
+    use crate::memory::allocator::{ALLOCATOR, GlobalAllocator};
     unsafe {
         // Generally speaking, we want to depend on UEFI as little as possible,
         // so the need for a UEFI allocator may seem a bit strange.
@@ -29,14 +28,15 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
         // In theory there are probably ways to get around it, but why bother?
         // Just taking advantage of the UEFI allocator briefly is a lot easier.
         // (This also lets us use `println!` prior to our main allocator being set up.)
-        use crate::allocator::uefi::UefiAllocator;
+        use crate::memory::allocator::uefi::UefiAllocator;
         // ABSOLUTELY DO NOT FORGET TO DISABLE THIS AFTER LEAVING UEFI BOOT SERVICES.
         // ALL ALLOCATIONS MUST BE STATIC OR BE FREED BEFORE BOOT SERVICES EXITS.
         // If the're not, Rust still try to free UEFI-allocated data using the new allocator,
         // which is undefined behavior.
         ALLOCATOR = GlobalAllocator::Uefi(UefiAllocator::new(st_boot.unsafe_clone()));
 
-        logger::set_tty(SerialTty::new(0x3F8));
+        use crate::driver::tty::serial::{COM1_PORT, SerialTty};
+        logger::set_tty(SerialTty::new(COM1_PORT));
         logger::init().unwrap();
     }
 
@@ -62,7 +62,7 @@ fn efi_main(handle: Handle, st_boot: SystemTable<Boot>) -> Status {
 
         // HACK: I hate having to use the UEFI allocator just to set up another allocator!
         //   There's got to be a better way.
-        use crate::allocator::standard::StandardAllocator;
+        use crate::memory::allocator::standard::StandardAllocator;
         let mut allocator;
         {
             let mut mmap = bs.memory_map(mmap_buf.as_mut_slice())

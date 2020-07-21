@@ -1,12 +1,17 @@
 use crate::graphics::color::RGB;
 use crate::graphics::font::Glyph;
 
-pub trait Display {
+pub trait GraphicDisplay {
     fn resolution(&self) -> (usize, usize);
     fn width(&self) -> usize { self.resolution().0 }
     fn height(&self) -> usize { self.resolution().1 }
 
     // HACK: This interface sucks.
+    // These interfaces don't support any color (e.g. `impl Color`)
+    // because then I can't use this as a `dyn` trait because of the generic.
+    // I *could* use `dyn Color`, but... why would you do that??
+    /// Unsafe: it is the responsibility of the caller to ensure
+    /// that the pixel is within the boundaries of the screen.
     unsafe fn set_pixel(&mut self, color: RGB, x: usize, y: usize);
     fn set_pixel_ignore_oob(&mut self, color: RGB, x: usize, y: usize) {
         if x > self.width() || y > self.height() {
@@ -18,8 +23,14 @@ pub trait Display {
         }
     }
 
+    /// Set the entire display to the same color, clearing everything previously drawn.
     fn clear(&mut self, color: RGB);
 
+    /// Display everything that was drawn to the screen.
+    fn refresh(&mut self);
+
+    /// Unsafe: it is the responsibility of the caller to ensure
+    /// that the entire glyph fits within the boundaries of the screen.
     unsafe fn draw_glyph(&mut self, bounding_box: (usize, usize), x: usize, y: usize, color: RGB, glyph: &dyn Glyph) {
         // We only assume that space was left for pixels within the bounding box,
         // and that pixels outside the bounding box may be out-of-bounds.

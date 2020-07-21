@@ -1,7 +1,7 @@
 use alloc::format;
 use core::cell::UnsafeCell;
-use crate::graphics::tty::Tty;
-use crate::graphics::tty::serial::SerialTty;
+use crate::driver::tty::Tty;
+use crate::driver::tty::serial::SerialTty;
 use log::{Record, LevelFilter, Metadata, SetLoggerError};
 
 enum GlobalLogger {

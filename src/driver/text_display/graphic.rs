@@ -1,43 +1,43 @@
+use crate::driver::graphic_display::GraphicDisplay;
+use crate::driver::text_display::{TextDisplayFrame, TextDisplay};
 use crate::graphics::color::{Color, RGB};
-use crate::graphics::display::Display;
 use crate::graphics::font::{Font, Glyph};
-use crate::graphics::terminal::Terminal;
-use crate::graphics::terminal::frame::TerminalFrame;
 
-pub struct DisplayTerminal<'d, 'f, G: Glyph> {
-    display: &'d mut (dyn Display + 'd),
+/// A virtual text display that renders itself onto a graphic display.
+pub struct GraphicTextDisplay<'d, 'f, G: Glyph> {
+    display: &'d mut (dyn GraphicDisplay + 'd),
     font: &'f (dyn Font<Glyph = G> + 'f),
-    frame: TerminalFrame,
+    frame: TextDisplayFrame,
     bg: RGB,
     fg: RGB,
 }
 
-impl<G: Glyph> DisplayTerminal<'_, '_, G> {
+impl<G: Glyph> GraphicTextDisplay<'_, '_, G> {
     pub fn new<'d, 'f>
-            (display: &'d mut (dyn Display + 'd), font: &'f (dyn Font<Glyph = G> + 'f),
+            (display: &'d mut (dyn GraphicDisplay + 'd), font: &'f (dyn Font<Glyph = G> + 'f),
              bg: impl Color, fg: impl Color)
-            -> DisplayTerminal<'d, 'f, G> {
+            -> GraphicTextDisplay<'d, 'f, G> {
         let (dp_width, dp_height) = display.resolution();
         let (ft_width, ft_height) = font.bounding_box();
         let ch_width = dp_width / ft_width as usize;
         let ch_height = dp_height / ft_height as usize;
 
-        DisplayTerminal {
+        GraphicTextDisplay {
             display: display,
             font: font,
-            frame: TerminalFrame::new((ch_width, ch_height)),
+            frame: TextDisplayFrame::new((ch_width, ch_height)),
             bg: bg.into_rgb(),
             fg: fg.into_rgb(),
         }
     }
 }
 
-impl<G: Glyph> Terminal for DisplayTerminal<'_, '_, G> {
-    fn get_frame<'a>(&'a self) -> &'a TerminalFrame {
+impl<G: Glyph> TextDisplay for GraphicTextDisplay<'_, '_, G> {
+    fn borrow_frame<'a>(&'a self) -> &'a TextDisplayFrame {
         &self.frame
     }
 
-    fn borrow_frame<'a>(&'a mut self) -> &'a mut TerminalFrame {
+    fn borrow_mut_frame<'a>(&'a mut self) -> &'a mut TextDisplayFrame {
         &mut self.frame
     }
 
