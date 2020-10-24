@@ -1,6 +1,12 @@
 # bootproof
 A hobby x86_64 operating system written in Rust.
 
+![screenshot](/docs/screenshot.png)
+
+The above screenshot from commit 538dfea (July 18th, 2020)
+demonstrates bootproof's Unicode support, PSF font loader,
+and generic support for graphics-based TTYs and terminals.
+
 ## Installation
 bootproof runs on x86_64 and expects to be loaded by UEFI.
 You can either boot it using an emulator or on your own computer.
