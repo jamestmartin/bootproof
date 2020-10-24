@@ -12,7 +12,7 @@ pub struct TextDisplayTty<'display> {
 impl TextDisplayTty<'_> {
     pub fn new<'a>(term: &'a mut dyn TextDisplay) -> TextDisplayTty<'a> {
         TextDisplayTty {
-            term: term,
+            term,
             history: {
                 let mut vec = Vec::new();
                 vec.push("".to_string());
@@ -52,7 +52,8 @@ impl Tty for TextDisplayTty<'_> {
             let mut chars = line.chars().collect::<Vec<_>>().into_iter();
             // We iterate over all of the characters in a virtual line
             // until every character has been added to a physical line.
-            while chars.len() > 0 {
+            // It is necessary that we iterate at least once, or empty lines will not be printed.
+            loop {
                 let mut physical_line = String::new();
                 // The width of a physical line may be no more than the width of the frame.
                 let width = chars.len().min(self.term.borrow_frame().width());
@@ -60,12 +61,16 @@ impl Tty for TextDisplayTty<'_> {
                     physical_line.push(chars.next().unwrap());
                 }
                 physical_lines.push(physical_line);
+
+                if chars.len() == 0 {
+                    break;
+                }
             }
         }
 
         // This is how many lines on the display we'll need for all of our physical lines.
         // We cannot have more lines than allowed by the display.
-        let mut y = physical_lines.len().min(self.term.borrow_frame().height() - 1);
+        let mut y = physical_lines.len().min(self.term.borrow_frame().height()) - 1;
         let frame = self.term.borrow_mut_frame();
         // We start from the lowest line and display each line until we reach the top of the screen.
         // We cannot run out of physical lines because the lowest line
