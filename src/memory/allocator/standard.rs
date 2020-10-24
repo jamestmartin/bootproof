@@ -2,7 +2,7 @@ use alloc::alloc::GlobalAlloc;
 use alloc::vec::Vec;
 use core::alloc::Layout;
 use core::cell::UnsafeCell;
-use uefi::table::boot::MemoryMapIter;
+use uefi::table::boot::MemoryDescriptor;
 
 // TODO: Support granularity better than pages.
 // TODO: Use an allocation algorithm that isn't absolute garbage!!
@@ -39,7 +39,7 @@ impl StandardAllocator {
     /// by default, it will behave as though every page were allocated.
     /// Use `populate` to fill the allocator with actual data
     /// using the map that UEFI provides when you exit boot services.
-    pub fn new(mmap: &mut MemoryMapIter) -> StandardAllocator {
+    pub fn new<'buf>(mmap: &mut impl ExactSizeIterator<Item = &'buf MemoryDescriptor>) -> StandardAllocator {
         // Try to find the largest physical address
         // and create a bitmap allowing the allocation of that much memory.
         let greatest_physical_page =
@@ -55,7 +55,7 @@ impl StandardAllocator {
         }
     }
 
-    pub fn populate(&mut self, mmap: &mut MemoryMapIter) {
+    pub fn populate<'buf>(&mut self, mmap: &mut impl ExactSizeIterator<Item = &'buf MemoryDescriptor>) {
         let self_pages = unsafe { &mut *self.pages.get() };
         // Mark all unsable memory as free for allocations.
         for entry in mmap {
