@@ -14,6 +14,10 @@ compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins" }
 version = "0.4.11"
 default-features = false
 
+[dependencies.pc-screen-font]
+git = "https://github.com/jamestmartin/pc-screen-font"
+rev = "aa3d7a09ee5d0ee632676fbbabea8fcaf570b83d"
+
 [dependencies.num-integer]
 version = "0.1.43"
 default-features = false

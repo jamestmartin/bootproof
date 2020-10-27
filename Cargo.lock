@@ -31,6 +31,7 @@ dependencies = [
  "compiler_builtins",
  "log",
  "num-integer",
+ "pc-screen-font",
  "uefi",
  "x86_64",
 ]
@@ -44,7 +45,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "compiler_builtins"
 version = "0.1.36"
-source = "git+https://github.com/rust-lang/compiler-builtins#33ad3669db0ac78a917aee787304d1391b6dc676"
+source = "git+https://github.com/rust-lang/compiler-builtins#0f2271e566f78dbe7aa3441c9e497c655592acef"
 
 [[package]]
 name = "log"
@@ -72,6 +73,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "pc-screen-font"
+version = "0.1.0"
+source = "git+https://github.com/jamestmartin/pc-screen-font?rev=aa3d7a09ee5d0ee632676fbbabea8fcaf570b83d#aa3d7a09ee5d0ee632676fbbabea8fcaf570b83d"
+dependencies = [
+ "num-integer",
 ]
 
 [[package]]
