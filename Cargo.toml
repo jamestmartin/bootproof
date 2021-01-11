@@ -19,11 +19,11 @@ git = "https://github.com/jamestmartin/pc-screen-font"
 rev = "aa3d7a09ee5d0ee632676fbbabea8fcaf570b83d"
 
 [dependencies.num-integer]
-version = "0.1.43"
+version = "0.1.44"
 default-features = false
 
 [target.'cfg(target_os = "uefi")'.dependencies]
-uefi = "0.6.0"
+uefi = "0.7"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-x86_64 = "0.12.2"
+x86_64 = "0.13"

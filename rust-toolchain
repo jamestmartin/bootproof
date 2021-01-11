@@ -1,1 +1,4 @@
-nightly
+[toolchain]
+channel = "nightly"
+components = ["rust-src-x86_64-unknown-uefi"]
+targets = ["x86_64-unknown-uefi"]
